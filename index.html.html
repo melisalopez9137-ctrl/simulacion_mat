@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisualFrac — Simulador de Fracciones</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #f7f3ee;
+  --bg2:   #eee8df;
+  --ink:   #1e1b18;
+  --ink2:  #4a4540;
+  --muted: #9a9088;
+  --border:#d4ccbf;
+
+  --a: #e85d2f;   /* naranja */
+  --b: #3b82f6;   /* azul    */
+  --c: #16a34a;   /* verde   */
+  --d: #9333ea;   /* morado  */
+  --e: #e5a200;   /* ámbar   */
+  --f: #0891b2;   /* cian    */
+
+  --radius: 18px;
+  --shadow: 0 4px 28px rgba(0,0,0,0.10);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+}
+
+/* ── HEADER ── */
+header{
+  padding:32px 24px 18px;
+  text-align:center;
+  border-bottom:2px solid var(--border);
+  background:white;
+}
+header h1{
+  font-family:'Baloo 2',cursive;
+  font-size:clamp(1.7rem,5vw,2.6rem);
+  font-weight:800;
+  color:var(--ink);
+  letter-spacing:-0.5px;
+}
+header h1 em{
+  font-style:normal;
+  background:linear-gradient(90deg,var(--a),var(--e));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+header p{
+  color:var(--muted);
+  font-size:.9rem;
+  font-weight:600;
+  margin-top:5px;
+}
+
+/* ── MODO TABS ── */
+.mode-bar{
+  display:flex; justify-content:center; gap:8px;
+  padding:16px;
+  background:white;
+  border-bottom:2px solid var(--border);
+  flex-wrap:wrap;
+}
+.mode-btn{
+  padding:9px 22px;
+  border-radius:50px;
+  border:2px solid var(--border);
+  background:transparent;
+  font-family:'Nunito',sans-serif;
+  font-weight:800; font-size:.85rem;
+  color:var(--ink2);
+  cursor:pointer;
+  transition:all .18s;
+  white-space:nowrap;
+}
+.mode-btn:hover{ border-color:var(--ink2); }
+.mode-btn.on{
+  background:var(--ink); color:white;
+  border-color:var(--ink);
+}
+
+/* ── MAIN LAYOUT ── */
+.wrap{
+  max-width:960px; margin:0 auto;
+  padding:28px 20px 60px;
+}
+
+/* ── PANEL ── */
+.panel{ display:none; }
+.panel.on{ display:block; animation:up .3s ease; }
+@keyframes up{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ── CARD ── */
+.card{
+  background:white;
+  border:2px solid var(--border);
+  border-radius:var(--radius);
+  padding:28px;
+  margin-bottom:22px;
+  box-shadow:var(--shadow);
+}
+.card-head{
+  font-family:'Baloo 2',cursive;
+  font-size:1.15rem; font-weight:700;
+  margin-bottom:20px;
+  display:flex; align-items:center; gap:10px;
+}
+.tag{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px;
+  border-radius:10px;
+  font-size:1rem;
+  flex-shrink:0;
+}
+
+/* ── SLIDERS ── */
+.slider-row{
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:14px;
+}
+.slider-row label{
+  font-size:.85rem; font-weight:700;
+  color:var(--ink2); min-width:130px;
+}
+input[type=range]{
+  flex:1; height:7px; border-radius:8px;
+  outline:none; cursor:pointer;
+  -webkit-appearance:none;
+  transition:background .1s;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:22px; height:22px; border-radius:50%;
+  background:white;
+  border:3px solid var(--ink);
+  box-shadow:0 2px 8px rgba(0,0,0,.18);
+  cursor:pointer;
+}
+.chip{
+  min-width:40px; text-align:center;
+  padding:4px 12px; border-radius:20px;
+  font-weight:800; font-size:1rem;
+  background:var(--bg2);
+}
+
+/* ── FRACCIÓN DISPLAY ── */
+.frac-display{
+  display:inline-flex; flex-direction:column; align-items:center;
+  gap:3px;
+}
+.frac-n{ font-family:'Baloo 2',cursive; font-size:2.8rem; font-weight:800; line-height:1; }
+.frac-line{ height:3px; width:60px; border-radius:3px; background:var(--ink); }
+.frac-d{ font-family:'Baloo 2',cursive; font-size:2.8rem; font-weight:800; line-height:1; }
+
+/* ══════════════════════
+   MODO 1 – CÍRCULO
+══════════════════════ */
+#svgCircle{ display:block; margin:0 auto; }
+.circle-info{
+  text-align:center; margin-top:18px;
+}
+.big-pct{
+  font-family:'Baloo 2',cursive;
+  font-size:3rem; font-weight:800; line-height:1;
+  color:var(--a);
+}
+.big-desc{
+  font-size:.95rem; color:var(--muted); font-weight:600; margin-top:4px;
+}
+
+/* ══════════════════════
+   MODO 2 – RECTA
+══════════════════════ */
+#svgRecta{ display:block; width:100%; }
+.recta-wrap{ overflow-x:auto; }
+
+/* ══════════════════════
+   MODO 3 – BARRAS
+══════════════════════ */
+.barra-visual{ display:flex; flex-direction:column; gap:10px; }
+.bv-row{ display:flex; align-items:center; gap:14px; }
+.bv-label{
+  font-family:'Baloo 2',cursive;
+  font-size:1rem; font-weight:700;
+  min-width:48px; text-align:right;
+}
+.bv-track{
+  flex:1; height:36px; background:var(--bg2);
+  border-radius:10px; overflow:hidden;
+  border:1.5px solid var(--border);
+  position:relative;
+}
+.bv-fill{
+  height:100%; border-radius:10px;
+  display:flex; align-items:center; padding-left:10px;
+  font-size:.78rem; font-weight:800; color:white;
+  transition:width .6s cubic-bezier(.34,1.56,.64,1);
+}
+.bv-val{
+  position:absolute; right:10px; top:50%;
+  transform:translateY(-50%);
+  font-size:.78rem; font-weight:800; color:var(--ink2);
+}
+
+/* ══════════════════════
+   MODO 4 – CUADRÍCULA
+══════════════════════ */
+#svgGrid{ display:block; margin:0 auto; }
+
+/* ══════════════════════
+   MODO 5 – LÍQUIDO
+══════════════════════ */
+.vasos-row{
+  display:flex; gap:18px; justify-content:center;
+  flex-wrap:wrap;
+}
+.vaso-wrap{
+  display:flex; flex-direction:column;
+  align-items:center; gap:10px;
+}
+.vaso-svg{ display:block; }
+.vaso-label{
+  font-family:'Baloo 2',cursive;
+  font-size:1rem; font-weight:700;
+  text-align:center;
+}
+
+/* ══════════════════════
+   MODO 6 – TARTA ANIMADA
+══════════════════════ */
+.tarta-container{ position:relative; }
+#svgTarta{ display:block; margin:0 auto; }
+.tarta-legend{
+  display:flex; flex-wrap:wrap; gap:10px;
+  margin-top:16px; justify-content:center;
+}
+.leg-item{
+  display:flex; align-items:center; gap:6px;
+  font-size:.84rem; font-weight:700;
+}
+.leg-dot{
+  width:12px; height:12px; border-radius:50%;
+}
+
+/* ── SEPARADOR PRESSETS ── */
+.presets{
+  display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;
+}
+.preset-btn{
+  padding:6px 16px; border-radius:50px;
+  border:2px solid var(--border);
+  background:transparent;
+  font-family:'Nunito',sans-serif;
+  font-weight:700; font-size:.82rem;
+  color:var(--ink2); cursor:pointer;
+  transition:all .15s;
+}
+.preset-btn:hover{
+  background:var(--bg2); border-color:var(--ink2);
+}
+
+/* ── INFO BOX ── */
+.info-row{
+  display:flex; gap:10px; flex-wrap:wrap;
+  margin-top:18px;
+}
+.info-box{
+  flex:1; min-width:110px;
+  background:var(--bg2);
+  border-radius:12px; padding:12px 16px;
+  text-align:center;
+}
+.info-box .ib-val{
+  font-family:'Baloo 2',cursive;
+  font-size:1.3rem; font-weight:800;
+}
+.info-box .ib-lbl{
+  font-size:.75rem; font-weight:700;
+  color:var(--muted); margin-top:2px;
+}
+
+/* ── NOTA PEDAGÓGICA ── */
+.nota{
+  background:#fff8ec;
+  border:2px solid #fde08a;
+  border-radius:14px;
+  padding:14px 18px;
+  font-size:.88rem; line-height:1.75;
+  color:#5c4a00;
+}
+.nota strong{ color:#b45309; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  .card{ padding:18px 14px; }
+  .slider-row label{ min-width:90px; font-size:.78rem; }
+  .frac-n,.frac-d{ font-size:2rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Visual<em>Frac</em></h1>
+  <p>Simulador de Visualización de Fracciones · Grado 6° · I.E. San José N.º 1 · Magangué</p>
+</header>
+
+<div class="mode-bar">
+  <button class="mode-btn on"  onclick="show('circulo',this)">⬤ Círculo</button>
+  <button class="mode-btn"     onclick="show('recta',this)">― Recta</button>
+  <button class="mode-btn"     onclick="show('barras',this)">▦ Barras</button>
+  <button class="mode-btn"     onclick="show('grid',this)">⊞ Cuadrícula</button>
+  <button class="mode-btn"     onclick="show('liquido',this)">🧪 Líquido</button>
+  <button class="mode-btn"     onclick="show('tarta',this)">🎂 Tarta</button>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════════
+     PANEL 1 — CÍRCULO
+══════════════════════════════════ -->
+<div class="panel on" id="panel-circulo">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#fff0eb">⬤</div>
+      Fracción sobre un círculo
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center">
+      <div>
+        <!-- controles -->
+        <div class="slider-row">
+          <label>Denominador</label>
+          <input type="range" id="cD" min="1" max="16" value="4"
+                 style="background:linear-gradient(90deg,var(--a) 25%,var(--bg2) 25%)"
+                 oninput="syncC()">
+          <span class="chip" id="cDv">4</span>
+        </div>
+        <div class="slider-row">
+          <label>Numerador</label>
+          <input type="range" id="cN" min="0" max="4" value="3"
+                 style="background:linear-gradient(90deg,var(--b) 75%,var(--bg2) 75%)"
+                 oninput="syncC()">
+          <span class="chip" id="cNv">3</span>
+        </div>
+
+        <div style="text-align:center;margin:18px 0">
+          <div class="frac-display">
+            <span class="frac-n" id="cFN" style="color:var(--b)">3</span>
+            <div class="frac-line"></div>
+            <span class="frac-d" id="cFD" style="color:var(--a)">4</span>
+          </div>
+        </div>
+
+        <div class="info-row">
+          <div class="info-box">
+            <div class="ib-val" id="cDec">0.75</div>
+            <div class="ib-lbl">Decimal</div>
+          </div>
+          <div class="info-box">
+            <div class="ib-val" id="cPct">75%</div>
+            <div class="ib-lbl">Porcentaje</div>
+          </div>
+          <div class="info-box">
+            <div class="ib-val" id="cSimp">3/4</div>
+            <div class="ib-lbl">Simplificada</div>
+          </div>
+        </div>
+
+        <div class="presets" style="margin-top:16px">
+          <button class="preset-btn" onclick="setC(1,2)">1/2</button>
+          <button class="preset-btn" onclick="setC(1,3)">1/3</button>
+          <button class="preset-btn" onclick="setC(3,4)">3/4</button>
+          <button class="preset-btn" onclick="setC(2,5)">2/5</button>
+          <button class="preset-btn" onclick="setC(5,6)">5/6</button>
+          <button class="preset-btn" onclick="setC(7,8)">7/8</button>
+        </div>
+      </div>
+
+      <div>
+        <svg id="svgCircle" viewBox="0 0 280 280" width="260" height="260"></svg>
+        <div class="circle-info">
+          <div class="big-pct" id="cBigPct">75%</div>
+          <div class="big-desc" id="cBigDesc">3 de 4 partes coloreadas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nota">
+    <strong>💡 Denominador:</strong> número de partes iguales en que se divide el todo (partes del círculo).<br>
+    <strong>💡 Numerador:</strong> cuántas partes tomamos o coloreamos.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANEL 2 — RECTA
+══════════════════════════════════ -->
+<div class="panel" id="panel-recta">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#eef3ff">―</div>
+      Fracción en la recta numérica
+    </div>
+
+    <div class="slider-row">
+      <label>Denominador</label>
+      <input type="range" id="rD" min="1" max="12" value="4"
+             style="background:linear-gradient(90deg,var(--a) 27%,var(--bg2) 27%)"
+             oninput="syncR()">
+      <span class="chip" id="rDv">4</span>
+    </div>
+    <div class="slider-row">
+      <label>Numerador</label>
+      <input type="range" id="rN" min="0" max="4" value="3"
+             style="background:linear-gradient(90deg,var(--b) 75%,var(--bg2) 75%)"
+             oninput="syncR()">
+      <span class="chip" id="rNv">3</span>
+    </div>
+
+    <div style="text-align:center;margin:10px 0 18px">
+      <div class="frac-display" style="display:inline-flex">
+        <span class="frac-n" id="rFN" style="color:var(--b)">3</span>
+        <div class="frac-line"></div>
+        <span class="frac-d" id="rFD" style="color:var(--a)">4</span>
+      </div>
+    </div>
+
+    <div class="recta-wrap">
+      <svg id="svgRecta" viewBox="0 0 700 130" height="130"></svg>
+    </div>
+
+    <div class="nota" style="margin-top:16px">
+      <strong>💡 Lee la recta:</strong> el segmento entre 0 y 1 se divide en partes iguales según el denominador. El punto naranja muestra dónde cae la fracción.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANEL 3 — BARRAS
+══════════════════════════════════ -->
+<div class="panel" id="panel-barras">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#f0fdf4">▦</div>
+      Fracciones como barras
+    </div>
+
+    <p style="font-size:.88rem;color:var(--muted);font-weight:600;margin-bottom:16px">
+      Compara varias fracciones al mismo tiempo. Usa los controles de cada barra.
+    </p>
+
+    <div class="barra-visual" id="barrasContainer"></div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <button class="preset-btn" onclick="barraPreset([[1,2],[1,3],[1,4]])">Medios · Tercios · Cuartos</button>
+      <button class="preset-btn" onclick="barraPreset([[2,3],[3,4],[4,5]])">2/3 · 3/4 · 4/5</button>
+      <button class="preset-btn" onclick="barraPreset([[1,2],[2,4],[3,6],[4,8]])">Equivalentes de 1/2</button>
+      <button class="preset-btn" onclick="barraPreset([[3,8],[3,4],[3,3]])">Mismo numerador</button>
+    </div>
+  </div>
+
+  <div class="nota">
+    <strong>💡 Observa:</strong> cuanto más larga es la barra, mayor es la fracción. Eso ayuda a comparar fracciones sin calcular.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANEL 4 — CUADRÍCULA
+══════════════════════════════════ -->
+<div class="panel" id="panel-grid">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#faf5ff">⊞</div>
+      Fracción sobre cuadrícula
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div style="flex:1;min-width:200px">
+        <div class="slider-row">
+          <label>Denominador</label>
+          <input type="range" id="gD" min="1" max="36" value="12"
+                 style="background:linear-gradient(90deg,var(--a) 31%,var(--bg2) 31%)"
+                 oninput="syncG()">
+          <span class="chip" id="gDv">12</span>
+        </div>
+        <div class="slider-row">
+          <label>Numerador</label>
+          <input type="range" id="gN" min="0" max="12" value="7"
+                 style="background:linear-gradient(90deg,var(--c) 58%,var(--bg2) 58%)"
+                 oninput="syncG()">
+          <span class="chip" id="gNv">7</span>
+        </div>
+        <div style="text-align:center;margin:14px 0">
+          <div class="frac-display" style="display:inline-flex">
+            <span class="frac-n" id="gFN" style="color:var(--c)">7</span>
+            <div class="frac-line"></div>
+            <span class="frac-d" id="gFD" style="color:var(--a)">12</span>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-box"><div class="ib-val" id="gPct">58.3%</div><div class="ib-lbl">Porcentaje</div></div>
+          <div class="info-box"><div class="ib-val" id="gSimp">7/12</div><div class="ib-lbl">Simplificada</div></div>
+        </div>
+        <div class="presets" style="margin-top:14px">
+          <button class="preset-btn" onclick="setG(1,4)">1/4</button>
+          <button class="preset-btn" onclick="setG(3,9)">3/9</button>
+          <button class="preset-btn" onclick="setG(5,10)">5/10</button>
+          <button class="preset-btn" onclick="setG(8,16)">8/16</button>
+          <button class="preset-btn" onclick="setG(6,36)">6/36</button>
+        </div>
+      </div>
+
+      <div style="flex-shrink:0">
+        <svg id="svgGrid" viewBox="0 0 280 280" width="260" height="260"></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="nota">
+    <strong>💡 Cuadrícula:</strong> cada celda es una parte igual del todo. Las celdas coloreadas representan el numerador.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANEL 5 — LÍQUIDO
+══════════════════════════════════ -->
+<div class="panel" id="panel-liquido">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#ecfeff">🧪</div>
+      Fracciones como vasos de líquido
+    </div>
+
+    <div class="slider-row">
+      <label>Denominador</label>
+      <input type="range" id="lD" min="1" max="10" value="4"
+             style="background:linear-gradient(90deg,var(--a) 30%,var(--bg2) 30%)"
+             oninput="syncL()">
+      <span class="chip" id="lDv">4</span>
+    </div>
+    <div class="slider-row">
+      <label>Numerador</label>
+      <input type="range" id="lN" min="0" max="4" value="3"
+             style="background:linear-gradient(90deg,var(--f) 75%,var(--bg2) 75%)"
+             oninput="syncL()">
+      <span class="chip" id="lNv">3</span>
+    </div>
+
+    <div style="text-align:center;margin:10px 0 22px">
+      <div class="frac-display" style="display:inline-flex">
+        <span class="frac-n" id="lFN" style="color:var(--f)">3</span>
+        <div class="frac-line"></div>
+        <span class="frac-d" id="lFD" style="color:var(--a)">4</span>
+      </div>
+    </div>
+
+    <div class="vasos-row" id="vasosRow"></div>
+
+    <div class="nota" style="margin-top:18px">
+      <strong>💡 Imagina:</strong> cada vaso es una parte igual del total. Los vasos azules están "llenos" (son las partes tomadas).
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PANEL 6 — TARTA ANIMADA
+══════════════════════════════════ -->
+<div class="panel" id="panel-tarta">
+
+  <div class="card">
+    <div class="card-head">
+      <div class="tag" style="background:#fff7ed">🎂</div>
+      Tarta de fracciones múltiples
+    </div>
+
+    <p style="font-size:.88rem;color:var(--muted);font-weight:600;margin-bottom:18px">
+      Divide el círculo en hasta 6 porciones con distintos tamaños.
+      La suma total no puede superar 1 entero.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+      <div id="tartaControls"></div>
+      <div class="tarta-container">
+        <svg id="svgTarta" viewBox="0 0 280 280" width="260" height="260"></svg>
+        <div class="tarta-legend" id="tartaLegend"></div>
+        <div id="tartaSuma" style="text-align:center;margin-top:12px;font-family:'Baloo 2',cursive;font-size:1rem;font-weight:700;color:var(--muted)"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nota">
+    <strong>💡 Suma de fracciones:</strong> cuando las porciones juntas forman el círculo completo, la suma de las fracciones es igual a 1.
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+/* ══════════════════════════════════════
+   HELPERS
+══════════════════════════════════════ */
+function gcd(a,b){ return b?gcd(b,a%b):a; }
+function simplify(n,d){
+  if(d===0) return [n,1];
+  const g=gcd(Math.abs(n),Math.abs(d));
+  return [n/g,d/g];
+}
+function toPct(n,d){ return d===0?'0%':`${+(n/d*100).toFixed(1)}%`; }
+function toDec(n,d){ return d===0?'0':`${+(n/d).toFixed(3)}`; }
+function sliderPct(v,min,max){ return ((v-min)/(max-min)*100)+'%'; }
+
+const PAL=['#e85d2f','#3b82f6','#16a34a','#9333ea','#e5a200','#0891b2','#db2777','#64748b'];
+
+/* show panel */
+function show(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('panel-'+id).classList.add('on');
+  btn.classList.add('on');
+  // init
+  const init={circulo:syncC,recta:syncR,barras:()=>barraPreset([[1,2],[1,3],[1,4]]),grid:syncG,liquido:syncL,tarta:initTarta};
+  if(init[id]) setTimeout(init[id],40);
+}
+
+/* ══════════════════════════════════════
+   PANEL 1 — CÍRCULO
+══════════════════════════════════════ */
+function setC(n,d){
+  document.getElementById('cD').value=d;
+  document.getElementById('cN').max=d;
+  document.getElementById('cN').value=n;
+  syncC();
+}
+function syncC(){
+  let d=+document.getElementById('cD').value;
+  let n=+document.getElementById('cN').value;
+  document.getElementById('cN').max=d;
+  if(n>d){ n=d; document.getElementById('cN').value=d; }
+
+  document.getElementById('cDv').textContent=d;
+  document.getElementById('cNv').textContent=n;
+  document.getElementById('cFN').textContent=n;
+  document.getElementById('cFD').textContent=d;
+
+  const [sn,sd]=simplify(n,d);
+  document.getElementById('cDec').textContent=toDec(n,d);
+  document.getElementById('cPct').textContent=toPct(n,d);
+  document.getElementById('cSimp').textContent=`${sn}/${sd}`;
+  document.getElementById('cBigPct').textContent=toPct(n,d);
+  document.getElementById('cBigDesc').textContent= n===0?'Ninguna parte':n===d?'¡Todo el entero!':`${n} de ${d} partes coloreadas`;
+
+  // slider bg
+  document.getElementById('cD').style.background=`linear-gradient(90deg,var(--a) ${sliderPct(d,1,16)},var(--bg2) ${sliderPct(d,1,16)})`;
+  document.getElementById('cN').style.background=`linear-gradient(90deg,var(--b) ${sliderPct(n,0,d)},var(--bg2) ${sliderPct(n,0,d)})`;
+
+  drawCircle('svgCircle',n,d,240);
+}
+
+function drawCircle(svgId,n,d,size){
+  const svg=document.getElementById(svgId);
+  svg.innerHTML='';
+  const cx=size/2, cy=size/2, r=size/2-10;
+  svg.setAttribute('viewBox',`0 0 ${size} ${size}`);
+
+  // sombra exterior
+  const shadow=makeSVG('circle');
+  Object.assign(shadow,{}); 
+  shadow.setAttribute('cx',cx+2); shadow.setAttribute('cy',cy+3);
+  shadow.setAttribute('r',r+2); shadow.setAttribute('fill','rgba(0,0,0,0.07)');
+  svg.appendChild(shadow);
+
+  if(d===1){
+    // full circle
+    const c=makeSVG('circle');
+    c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',r);
+    c.setAttribute('fill', n>=1 ? PAL[0] : '#e5e5e5');
+    c.setAttribute('stroke','white'); c.setAttribute('stroke-width','3');
+    svg.appendChild(c);
+    return;
+  }
+
+  const TAKEN_COLORS=['#e85d2f','#f97316','#ef4444','#ec4899','#a855f7','#3b82f6','#06b6d4','#10b981'];
+
+  for(let i=0;i<d;i++){
+    const a0=(i/d)*Math.PI*2 - Math.PI/2;
+    const a1=((i+1)/d)*Math.PI*2 - Math.PI/2;
+    const x1=cx+r*Math.cos(a0), y1=cy+r*Math.sin(a0);
+    const x2=cx+r*Math.cos(a1), y2=cy+r*Math.sin(a1);
+    const large=(1/d)>0.5?1:0;
+    const path=makeSVG('path');
+    path.setAttribute('d',`M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`);
+    path.setAttribute('fill', i<n ? TAKEN_COLORS[i%TAKEN_COLORS.length] : '#ece8e1');
+    path.setAttribute('stroke','white');
+    path.setAttribute('stroke-width','3');
+    // hover efecto
+    if(i<n){
+      path.setAttribute('filter','url(#glow)');
+    }
+    svg.appendChild(path);
+  }
+
+  // defs glow
+  const defs=makeSVG('defs');
+  defs.innerHTML=`<filter id="glow"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  svg.insertBefore(defs,svg.firstChild);
+
+  // center dot
+  const dot=makeSVG('circle');
+  dot.setAttribute('cx',cx); dot.setAttribute('cy',cy);
+  dot.setAttribute('r',7); dot.setAttribute('fill','white');
+  dot.setAttribute('stroke','#ddd'); dot.setAttribute('stroke-width','1.5');
+  svg.appendChild(dot);
+}
+
+function makeSVG(tag){ return document.createElementNS('http://www.w3.org/2000/svg',tag); }
+
+/* ══════════════════════════════════════
+   PANEL 2 — RECTA
+══════════════════════════════════════ */
+function syncR(){
+  let d=+document.getElementById('rD').value;
+  let n=+document.getElementById('rN').value;
+  document.getElementById('rN').max=d;
+  if(n>d){ n=d; document.getElementById('rN').value=d; }
+
+  document.getElementById('rDv').textContent=d;
+  document.getElementById('rNv').textContent=n;
+  document.getElementById('rFN').textContent=n;
+  document.getElementById('rFD').textContent=d;
+  document.getElementById('rD').style.background=`linear-gradient(90deg,var(--a) ${sliderPct(d,1,12)},var(--bg2) ${sliderPct(d,1,12)})`;
+  document.getElementById('rN').style.background=`linear-gradient(90deg,var(--b) ${sliderPct(n,0,d)},var(--bg2) ${sliderPct(n,0,d)})`;
+
+  drawRecta(n,d);
+}
+
+function drawRecta(n,d){
+  const svg=document.getElementById('svgRecta');
+  svg.innerHTML='';
+  const W=700, H=130;
+  const pad=55, y=65;
+  const len=W-pad*2;
+
+  // zona coloreada desde 0 hasta n/d
+  const xFrac=pad+(n/d)*len;
+  const zone=makeSVG('rect');
+  zone.setAttribute('x',pad); zone.setAttribute('y',y-6);
+  zone.setAttribute('width',Math.max(0,xFrac-pad)); zone.setAttribute('height',12);
+  zone.setAttribute('fill','rgba(232,93,47,0.18)'); zone.setAttribute('rx','4');
+  svg.appendChild(zone);
+
+  // línea principal
+  const line=makeSVG('line');
+  line.setAttribute('x1',pad-8); line.setAttribute('y1',y);
+  line.setAttribute('x2',pad+len+8); line.setAttribute('y2',y);
+  line.setAttribute('stroke','#c4bdb3'); line.setAttribute('stroke-width','3');
+  svg.appendChild(line);
+
+  // ticks y etiquetas
+  for(let i=0;i<=d;i++){
+    const x=pad+(i/d)*len;
+    const isEnd=(i===0||i===d);
+    const tick=makeSVG('line');
+    tick.setAttribute('x1',x); tick.setAttribute('y1',y-(isEnd?18:13));
+    tick.setAttribute('x2',x); tick.setAttribute('y2',y+(isEnd?18:13));
+    tick.setAttribute('stroke', i===n? '#e85d2f' : (isEnd?'#333':'#9a9088'));
+    tick.setAttribute('stroke-width', i===n?3:(isEnd?2.5:1.5));
+    svg.appendChild(tick);
+
+    // etiqueta
+    const lbl=makeSVG('text');
+    lbl.setAttribute('x',x); lbl.setAttribute('text-anchor','middle');
+    lbl.setAttribute('font-family','Baloo 2,cursive'); lbl.setAttribute('font-weight','700');
+    if(i===0){
+      lbl.setAttribute('y',y+34); lbl.setAttribute('font-size','15');
+      lbl.setAttribute('fill','#333'); lbl.textContent='0';
+    } else if(i===d){
+      lbl.setAttribute('y',y+34); lbl.setAttribute('font-size','15');
+      lbl.setAttribute('fill','#333'); lbl.textContent='1';
+    } else {
+      // fracción arriba
+      const num=makeSVG('text');
+      num.setAttribute('x',x); num.setAttribute('y',y-26);
+      num.setAttribute('text-anchor','middle'); num.setAttribute('font-size','12');
+      num.setAttribute('font-family','Baloo 2,cursive'); num.setAttribute('font-weight','700');
+      num.setAttribute('fill', i===n ? '#e85d2f' : '#9a9088');
+      num.textContent=i;
+      svg.appendChild(num);
+      const bar2=makeSVG('line');
+      bar2.setAttribute('x1',x-7); bar2.setAttribute('y1',y-15);
+      bar2.setAttribute('x2',x+7); bar2.setAttribute('y2',y-15);
+      bar2.setAttribute('stroke', i===n?'#e85d2f':'#bbb');
+      bar2.setAttribute('stroke-width','1.5');
+      svg.appendChild(bar2);
+      const den2=makeSVG('text');
+      den2.setAttribute('x',x); den2.setAttribute('y',y-4);
+      den2.setAttribute('text-anchor','middle'); den2.setAttribute('font-size','12');
+      den2.setAttribute('font-family','Baloo 2,cursive'); den2.setAttribute('font-weight','700');
+      den2.setAttribute('fill', i===n ? '#e85d2f' : '#9a9088');
+      den2.textContent=d;
+      svg.appendChild(den2);
+    }
+    svg.appendChild(lbl);
+  }
+
+  // punto naranja para la fracción actual
+  if(n>=0){
+    const px=pad+(n/d)*len;
+    const shadow=makeSVG('circle');
+    shadow.setAttribute('cx',px+1); shadow.setAttribute('cy',y+2);
+    shadow.setAttribute('r',11); shadow.setAttribute('fill','rgba(232,93,47,0.2)');
+    svg.appendChild(shadow);
+    const dot=makeSVG('circle');
+    dot.setAttribute('cx',px); dot.setAttribute('cy',y);
+    dot.setAttribute('r',10); dot.setAttribute('fill','#e85d2f');
+    dot.setAttribute('stroke','white'); dot.setAttribute('stroke-width','3');
+    svg.appendChild(dot);
+    // valor dentro del punto
+    const txt=makeSVG('text');
+    txt.setAttribute('x',px); txt.setAttribute('y',y+5);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-size','10');
+    txt.setAttribute('font-family','Baloo 2,cursive'); txt.setAttribute('font-weight','800');
+    txt.setAttribute('fill','white');
+    txt.textContent=n>0?`${n}`:n;
+    svg.appendChild(txt);
+  }
+}
+
+/* ══════════════════════════════════════
+   PANEL 3 — BARRAS
+══════════════════════════════════════ */
+let barrasData=[[1,2],[1,3],[1,4]];
+
+function barraPreset(arr){ barrasData=[...arr]; renderBarras(); }
+
+function renderBarras(){
+  const cont=document.getElementById('barrasContainer');
+  const max=Math.max(...barrasData.map(([n,d])=>n/d));
+  cont.innerHTML='';
+  barrasData.forEach(([n,d],i)=>{
+    const pct=max>0?Math.min((n/d/max)*90,90):0;
+    const color=PAL[i%PAL.length];
+    const row=document.createElement('div');
+    row.className='bv-row';
+    row.innerHTML=`
+      <div class="bv-label" style="color:${color}">${n}/${d}</div>
+      <div class="bv-track">
+        <div class="bv-fill" id="bvFill-${i}" style="width:0%;background:${color}"></div>
+        <div class="bv-val">${toPct(n,d)}</div>
+      </div>`;
+    cont.appendChild(row);
+    setTimeout(()=>{
+      document.getElementById(`bvFill-${i}`).style.width=pct+'%';
+    },80+i*120);
+  });
+}
+
+/* ══════════════════════════════════════
+   PANEL 4 — CUADRÍCULA
+══════════════════════════════════════ */
+function setG(n,d){
+  document.getElementById('gD').value=d;
+  document.getElementById('gN').max=d;
+  document.getElementById('gN').value=n;
+  syncG();
+}
+function syncG(){
+  let d=+document.getElementById('gD').value;
+  let n=+document.getElementById('gN').value;
+  document.getElementById('gN').max=d;
+  if(n>d){ n=d; document.getElementById('gN').value=d; }
+  document.getElementById('gDv').textContent=d;
+  document.getElementById('gNv').textContent=n;
+  document.getElementById('gFN').textContent=n;
+  document.getElementById('gFD').textContent=d;
+  const [sn,sd]=simplify(n,d);
+  document.getElementById('gPct').textContent=toPct(n,d);
+  document.getElementById('gSimp').textContent=`${sn}/${sd}`;
+  document.getElementById('gD').style.background=`linear-gradient(90deg,var(--a) ${sliderPct(d,1,36)},var(--bg2) ${sliderPct(d,1,36)})`;
+  document.getElementById('gN').style.background=`linear-gradient(90deg,var(--c) ${sliderPct(n,0,d)},var(--bg2) ${sliderPct(n,0,d)})`;
+  drawGrid(n,d);
+}
+
+function drawGrid(n,d){
+  const svg=document.getElementById('svgGrid');
+  svg.innerHTML='';
+  const size=260;
+  const cols=Math.ceil(Math.sqrt(d));
+  const rows=Math.ceil(d/cols);
+  const pad=10, gap=4;
+  const cw=(size-pad*2-gap*(cols-1))/cols;
+  const rh=(size-pad*2-gap*(rows-1))/rows;
+
+  const TAKEN='#16a34a';
+  let idx=0;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(idx>=d) break;
+      const x=pad+c*(cw+gap), y=pad+r*(rh+gap);
+      const rect=makeSVG('rect');
+      rect.setAttribute('x',x); rect.setAttribute('y',y);
+      rect.setAttribute('width',cw); rect.setAttribute('height',rh);
+      rect.setAttribute('rx',6);
+      rect.setAttribute('fill', idx<n ? TAKEN : '#ece8e1');
+      rect.setAttribute('stroke','white'); rect.setAttribute('stroke-width','2');
+      svg.appendChild(rect);
+
+      // número de celda
+      if(cw>28 && rh>22){
+        const t=makeSVG('text');
+        t.setAttribute('x',x+cw/2); t.setAttribute('y',y+rh/2+5);
+        t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11');
+        t.setAttribute('font-family','Baloo 2,cursive'); t.setAttribute('font-weight','700');
+        t.setAttribute('fill', idx<n?'white':'#bbb');
+        t.textContent=idx+1;
+        svg.appendChild(t);
+      }
+      idx++;
+    }
+  }
+}
+
+/* ══════════════════════════════════════
+   PANEL 5 — LÍQUIDO
+══════════════════════════════════════ */
+function syncL(){
+  let d=+document.getElementById('lD').value;
+  let n=+document.getElementById('lN').value;
+  document.getElementById('lN').max=d;
+  if(n>d){ n=d; document.getElementById('lN').value=d; }
+  document.getElementById('lDv').textContent=d;
+  document.getElementById('lNv').textContent=n;
+  document.getElementById('lFN').textContent=n;
+  document.getElementById('lFD').textContent=d;
+  document.getElementById('lD').style.background=`linear-gradient(90deg,var(--a) ${sliderPct(d,1,10)},var(--bg2) ${sliderPct(d,1,10)})`;
+  document.getElementById('lN').style.background=`linear-gradient(90deg,var(--f) ${sliderPct(n,0,d)},var(--bg2) ${sliderPct(n,0,d)})`;
+  drawVasos(n,d);
+}
+
+function drawVasos(n,d){
+  const cont=document.getElementById('vasosRow');
+  cont.innerHTML='';
+  const vasoW=d<=5?70:d<=8?56:48;
+  const vasoH=vasoW*1.4;
+
+  for(let i=0;i<d;i++){
+    const taken=i<n;
+    const wrap=document.createElement('div');
+    wrap.className='vaso-wrap';
+
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${vasoW} ${vasoH}`);
+    svg.setAttribute('width',vasoW); svg.setAttribute('height',vasoH);
+    svg.className='vaso-svg';
+
+    // sombra
+    svg.innerHTML=`
+      <defs>
+        <linearGradient id="liq${i}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${taken?'#38bdf8':'#f1f5f9'}"/>
+          <stop offset="100%" stop-color="${taken?'#0369a1':'#e2e8f0'}"/>
+        </linearGradient>
+        <clipPath id="clip${i}">
+          <path d="M${vasoW*0.1},4 L${vasoW*0.05},${vasoH-6} 
+                   Q${vasoW*0.05},${vasoH} ${vasoW*0.1},${vasoH} 
+                   L${vasoW*0.9},${vasoH} 
+                   Q${vasoW*0.95},${vasoH} ${vasoW*0.95},${vasoH-6} 
+                   L${vasoW*0.9},4 Z"/>
+        </clipPath>
+      </defs>
+      <!-- vaso contorno -->
+      <path d="M${vasoW*0.1},4 L${vasoW*0.05},${vasoH-6} 
+               Q${vasoW*0.05},${vasoH} ${vasoW*0.1},${vasoH} 
+               L${vasoW*0.9},${vasoH} 
+               Q${vasoW*0.95},${vasoH} ${vasoW*0.95},${vasoH-6} 
+               L${vasoW*0.9},4 Z"
+            fill="${taken?'#e0f2fe':'#f8fafc'}" stroke="${taken?'#0284c7':'#cbd5e1'}" stroke-width="2"/>
+      <!-- líquido -->
+      ${taken?`<rect x="${vasoW*0.06}" y="${vasoH*0.18}" width="${vasoW*0.88}" height="${vasoH*0.72}" 
+               fill="url(#liq${i})" clip-path="url(#clip${i})"/>
+               <!-- brillo -->
+               <rect x="${vasoW*0.15}" y="${vasoH*0.22}" width="${vasoW*0.08}" height="${vasoH*0.55}" rx="4" fill="rgba(255,255,255,0.35)"/>`:''}
+      <!-- número -->
+      <text x="${vasoW/2}" y="${vasoH/2+5}" text-anchor="middle" 
+            font-family="Baloo 2,cursive" font-size="${vasoW*0.28}" font-weight="800"
+            fill="${taken?'white':'#94a3b8'}">${i+1}</text>
+    `;
+    wrap.appendChild(svg);
+
+    const lbl=document.createElement('div');
+    lbl.className='vaso-label';
+    lbl.style.color=taken?'#0369a1':'#94a3b8';
+    lbl.style.fontSize='.78rem';
+    lbl.textContent=taken?'✓':'';
+    wrap.appendChild(lbl);
+    cont.appendChild(wrap);
+  }
+}
+
+/* ══════════════════════════════════════
+   PANEL 6 — TARTA MÚLTIPLE
+══════════════════════════════════════ */
+let tartaData=[{n:1,d:4},{n:1,d:4},{n:1,d:4}];
+const TARTA_COLS=['#e85d2f','#3b82f6','#16a34a','#9333ea','#e5a200','#0891b2'];
+const TARTA_NAMES=['A','B','C','D','E','F'];
+
+function initTarta(){
+  tartaData=[{n:1,d:4},{n:1,d:4},{n:1,d:4}];
+  renderTartaControls();
+  drawTarta();
+}
+
+function renderTartaControls(){
+  const cont=document.getElementById('tartaControls');
+  cont.innerHTML='';
+
+  tartaData.forEach((f,i)=>{
+    const block=document.createElement('div');
+    block.style.cssText='margin-bottom:14px';
+    block.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:14px;height:14px;border-radius:50%;background:${TARTA_COLS[i]};flex-shrink:0"></div>
+        <span style="font-weight:800;font-size:.9rem">Porción ${TARTA_NAMES[i]}</span>
+        <span style="font-family:'Baloo 2',cursive;font-weight:800;color:${TARTA_COLS[i]}" id="tartaLbl${i}">${f.n}/${f.d}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.78rem;color:var(--muted);min-width:18px">N</span>
+        <input type="range" min="0" max="${f.d}" value="${f.n}" 
+               style="flex:1;height:6px;accent-color:${TARTA_COLS[i]}"
+               oninput="tartaChange(${i},'n',this.value)">
+        <span style="font-size:.78rem;color:var(--muted);min-width:18px">D</span>
+        <input type="range" min="1" max="16" value="${f.d}"
+               style="flex:1;height:6px;accent-color:${TARTA_COLS[i]}"
+               oninput="tartaChange(${i},'d',this.value)">
+      </div>`;
+    cont.appendChild(block);
+  });
+
+  // botones añadir/quitar
+  const btns=document.createElement('div');
+  btns.style.cssText='display:flex;gap:8px;margin-top:10px';
+  if(tartaData.length<6){
+    const ba=document.createElement('button');
+    ba.className='preset-btn';
+    ba.textContent='+ Añadir porción';
+    ba.onclick=()=>{ tartaData.push({n:1,d:8}); renderTartaControls(); drawTarta(); };
+    btns.appendChild(ba);
+  }
+  if(tartaData.length>1){
+    const br=document.createElement('button');
+    br.className='preset-btn';
+    br.textContent='− Quitar última';
+    br.style.color='var(--a)';
+    br.onclick=()=>{ tartaData.pop(); renderTartaControls(); drawTarta(); };
+    btns.appendChild(br);
+  }
+  cont.appendChild(btns);
+}
+
+function tartaChange(i,prop,val){
+  tartaData[i][prop]=+val;
+  if(tartaData[i].n>tartaData[i].d) tartaData[i].n=tartaData[i].d;
+  document.getElementById(`tartaLbl${i}`).textContent=`${tartaData[i].n}/${tartaData[i].d}`;
+  drawTarta();
+}
+
+function drawTarta(){
+  const svg=document.getElementById('svgTarta');
+  svg.innerHTML='';
+  const cx=140, cy=140, r=120;
+  let total=tartaData.reduce((a,f)=>a+f.n/f.d,0);
+  total=Math.min(total,1);
+
+  const legend=document.getElementById('tartaLegend');
+  legend.innerHTML='';
+
+  let angle=-Math.PI/2;
+
+  tartaData.forEach((f,i)=>{
+    const frac=f.n/f.d;
+    if(frac<=0) return;
+    const slice=Math.min(frac,total)*Math.PI*2;
+    const a0=angle, a1=angle+slice;
+    const x0=cx+r*Math.cos(a0), y0=cy+r*Math.sin(a0);
+    const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    const large=slice>Math.PI?1:0;
+    const path=makeSVG('path');
+    path.setAttribute('d',`M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${large},1 ${x1},${y1} Z`);
+    path.setAttribute('fill',TARTA_COLS[i]);
+    path.setAttribute('stroke','white'); path.setAttribute('stroke-width','3');
+    svg.appendChild(path);
+
+    // etiqueta en el sector
+    const ma=(a0+a1)/2;
+    const lr=r*0.65;
+    const lx=cx+lr*Math.cos(ma), ly=cy+lr*Math.sin(ma);
+    const t=makeSVG('text');
+    t.setAttribute('x',lx); t.setAttribute('y',ly+5);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-family','Baloo 2,cursive');
+    t.setAttribute('font-size','14'); t.setAttribute('font-weight','800');
+    t.setAttribute('fill','white');
+    t.textContent=`${f.n}/${f.d}`;
+    svg.appendChild(t);
+
+    angle+=slice;
+
+    // leyenda
+    const li=document.createElement('div');
+    li.className='leg-item';
+    li.innerHTML=`<div class="leg-dot" style="background:${TARTA_COLS[i]}"></div>${TARTA_NAMES[i]}: ${f.n}/${f.d}`;
+    legend.appendChild(li);
+  });
+
+  // resto (vacío)
+  if(total<0.999){
+    const restAngle=(1-total)*Math.PI*2;
+    const x0=cx+r*Math.cos(angle), y0=cy+r*Math.sin(angle);
+    const a1=angle+restAngle;
+    const x1=cx+r*Math.cos(a1), y1=cy+r*Math.sin(a1);
+    const large=restAngle>Math.PI?1:0;
+    const path=makeSVG('path');
+    path.setAttribute('d',`M${cx},${cy} L${x0},${y0} A${r},${r} 0 ${large},1 ${x1},${y1} Z`);
+    path.setAttribute('fill','#ece8e1');
+    path.setAttribute('stroke','white'); path.setAttribute('stroke-width','3');
+    svg.appendChild(path);
+  }
+
+  // centro
+  const dot=makeSVG('circle');
+  dot.setAttribute('cx',cx); dot.setAttribute('cy',cy);
+  dot.setAttribute('r',10); dot.setAttribute('fill','white');
+  svg.appendChild(dot);
+
+  const suma=tartaData.reduce((a,f)=>a+f.n/f.d,0);
+  const el=document.getElementById('tartaSuma');
+  if(suma>1.001){
+    el.textContent=`⚠️ La suma supera 1 (${+(suma).toFixed(2)}). El círculo muestra solo hasta 1 entero.`;
+    el.style.color='var(--a)';
+  } else {
+    el.textContent=`Suma total: ${+(suma).toFixed(3)} ${Math.abs(suma-1)<0.01?'= 1 entero completo ✓':''}`;
+    el.style.color='var(--muted)';
+  }
+}
+
+/* ── INIT ── */
+window.addEventListener('DOMContentLoaded',()=>{
+  syncC();
+  barraPreset([[1,2],[1,3],[1,4]]);
+});
+</script>
+</body>
+</html>
